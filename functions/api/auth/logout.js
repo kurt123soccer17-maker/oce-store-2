@@ -1,1 +1,8 @@
-import {json,adminSession,csrfOk,clearCookie} from "../../_lib.js"; export async function onRequestPost({request,env}){const s=await adminSession(request,env);if(!s||!csrfOk(request,s))return json({error:"Unauthorized"},{status:401});return json({ok:true},{headers:{"set-cookie":clearCookie("oce_admin")}});}
+export async function onRequestPost() {
+  return new Response(JSON.stringify({ success: true }), {
+    headers: {
+      "Content-Type": "application/json",
+      "Set-Cookie": "admin_session=deleted; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax",
+    },
+  });
+}
