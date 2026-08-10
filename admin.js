@@ -1,14 +1,189 @@
-let csrfToken="";const $=id=>document.getElementById(id);
-async function api(url,opts={}){const r=await fetch(url,{...opts,headers:{"Content-Type":"application/json",...(opts.headers||{})}});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||"Request failed");return d}
-async function adminLogin(){try{const d=await api("/api/auth/login",{method:"POST",body:JSON.stringify({password:$("adminPassword").value})});csrfToken=d.csrf;$("login").classList.add("hidden");$("dashboard").classList.remove("hidden");await loadAll()}catch(e){$("loginMsg").textContent=e.message}}
-async function boot(){try{const d=await api("/api/admin/me");csrfToken=d.csrf;$("login").classList.add("hidden");$("dashboard").classList.remove("hidden");await loadAll()}catch{if($("login"))$("login").classList.remove("hidden");if($("dashboard"))$("dashboard").classList.add("hidden")}}
-async function logout(){try{await api("/api/auth/logout",{method:"POST",headers:{"x-csrf-token":csrfToken}})}finally{location.reload()}}
-async function loadAll(){await loadProducts();await loadSettings();await loadOrders()}
-async function loadProducts(){const {products}=await api("/api/admin/products");$("productEditor").innerHTML=products.map(p=>`<div class="editor" data-id="${p.id}"><input data-k="name" value="${esc(p.name)}" placeholder="Name"><input data-k="price" type="number" min="0" step=".01" value="${p.price}"><select data-k="billing"><option value="one-time" ${p.billing==="one-time"?"selected":""}>One-time</option><option value="monthly" ${p.billing==="monthly"?"selected":""}>Monthly</option></select><input data-k="icon" value="${esc(p.icon||"◆")}"><input data-k="description" value="${esc(p.description||"")}"><textarea data-k="delivery_command" placeholder="Minecraft console command">${esc(p.delivery_command||"")}</textarea><label><input data-k="enabled" type="checkbox" ${p.enabled?"checked":""}> Enabled</label><button class="btn primary" onclick="saveProduct('${p.id}',this)">SAVE ${esc(p.name).toUpperCase()}</button></div>`).join("")}
-async function saveProduct(id,btn){const box=btn.closest(".editor"),g=k=>box.querySelector(`[data-k="${k}"]`);try{await api("/api/admin/products/"+encodeURIComponent(id),{method:"PUT",headers:{"x-csrf-token":csrfToken},body:JSON.stringify({name:g("name").value,price:g("price").value,billing:g("billing").value,icon:g("icon").value,description:g("description").value,delivery_command:g("delivery_command").value,enabled:g("enabled").checked,perks:[]})});btn.textContent="SAVED ✓";setTimeout(()=>btn.textContent="SAVE "+g("name").value.toUpperCase(),1500)}catch(e){alert(e.message)}}
-async function loadSettings(){const s=await api("/api/admin/settings");$("siteIP").value=s.server_ip||"";$("siteDiscord").value=s.discord_url||""}
-async function saveSite(){try{await api("/api/admin/settings",{method:"PUT",headers:{"x-csrf-token":csrfToken},body:JSON.stringify({server_ip:$("siteIP").value,discord_url:$("siteDiscord").value})});$("saveMsg").textContent="Saved ✓";setTimeout(()=>$("saveMsg").textContent="",1500)}catch(e){alert(e.message)}}
-async function loadOrders(){const q=encodeURIComponent($("orderSearch").value),s=encodeURIComponent($("orderStatus").value);try{const {orders}=await api(`/api/admin/orders?q=${q}&status=${s}`);$("orders").innerHTML=orders.length?`<div class="orders">${orders.map(o=>`<div class="order"><b>${esc(o.id)}</b><span>${esc(o.minecraft_username)}</span><span>${esc(o.product_name)}</span><span>A$${(o.amount_cents/100).toFixed(2)}</span><span>Payment: ${esc(o.payment_status)}</span><span>Delivery: ${esc(o.delivery_status)}</span>${o.payment_status==="paid"&&o.delivery_status!=="delivered"?`<button class="btn primary" onclick="deliver('${o.id}')">DELIVER</button>`:""}</div>`).join("")}</div>`:"<p class='muted'>No orders found.</p>"}catch(e){alert(e.message)}}
-async function deliver(id){try{await api("/api/admin/orders/"+encodeURIComponent(id)+"/deliver",{method:"POST",headers:{"x-csrf-token":csrfToken}});await loadOrders()}catch(e){alert(e.message)}}
-function esc(s){return String(s??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll('"',"&quot;")}
-document.addEventListener("DOMContentLoaded",boot);
+let csrfToken = "";
+const $ = (id) => document.getElementById(id);
+
+async function api(url, opts = {}) {
+  const headers = {
+    "Content-Type": "application/json",
+    ...(opts.headers || {}),
+  };
+  
+  if (csrfToken) {
+    headers["x-csrf-token"] = csrfToken;
+  }
+
+  const r = await fetch(url, { ...opts, headers });
+  const d = await r.json().catch(() => ({}));
+  
+  if (!r.ok) throw new Error(d.error || "Request failed");
+  return d;
+}
+
+async function adminLogin() {
+  try {
+    const d = await api("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ password: $("adminPassword").value }),
+    });
+    csrfToken = d.csrf || "";
+    $("login").classList.add("hidden");
+    $("dashboard").classList.remove("hidden");
+    await loadAll();
+  } catch (e) {
+    $("loginMsg").textContent = e.message;
+  }
+}
+
+async function boot() {
+  try {
+    const d = await api("/api/admin/me");
+    csrfToken = d.csrf || "";
+    if ($("login")) $("login").classList.add("hidden");
+    if ($("dashboard")) $("dashboard").classList.remove("hidden");
+    await loadAll();
+  } catch {
+    if ($("login")) $("login").classList.remove("hidden");
+    if ($("dashboard")) $("dashboard").classList.add("hidden");
+  }
+}
+
+async function logout() {
+  try {
+    await api("/api/auth/logout", {
+      method: "POST",
+    });
+  } catch (e) {
+    console.error("Logout error:", e);
+  } finally {
+    csrfToken = "";
+    location.reload();
+  }
+}
+
+async function loadAll() {
+  await loadProducts();
+  await loadSettings();
+  await loadOrders();
+}
+
+async function loadProducts() {
+  const { products } = await api("/api/admin/products");
+  $("productEditor").innerHTML = products
+    .map(
+      (p) => `<div class="editor" data-id="${p.id}">
+    <input data-k="name" value="${esc(p.name)}" placeholder="Name">
+    <input data-k="price" type="number" min="0" step=".01" value="${p.price}">
+    <select data-k="billing">
+      <option value="one-time" ${p.billing === "one-time" ? "selected" : ""}>One-time</option>
+      <option value="monthly" ${p.billing === "monthly" ? "selected" : ""}>Monthly</option>
+    </select>
+    <input data-k="icon" value="${esc(p.icon || "◆")}">
+    <input data-k="description" value="${esc(p.description || "")}">
+    <textarea data-k="delivery_command" placeholder="Minecraft console command">${esc(p.delivery_command || "")}</textarea>
+    <label><input data-k="enabled" type="checkbox" ${p.enabled ? "checked" : ""}> Enabled</label>
+    <button class="btn primary" onclick="saveProduct('${p.id}',this)">SAVE ${esc(p.name).toUpperCase()}</button>
+  </div>`
+    )
+    .join("");
+}
+
+async function saveProduct(id, btn) {
+  const box = btn.closest(".editor");
+  const g = (k) => box.querySelector(`[data-k="${k}"]`);
+  
+  try {
+    // Send formatted payload (converting price to float/number and price_cents)
+    const priceNum = parseFloat(g("price").value) || 0;
+    
+    await api("/api/admin/products/" + encodeURIComponent(id), {
+      method: "PUT",
+      body: JSON.stringify({
+        name: g("name").value,
+        price: priceNum,
+        price_cents: Math.round(priceNum * 100),
+        billing: g("billing").value,
+        icon: g("icon").value,
+        description: g("description").value,
+        delivery_command: g("delivery_command").value,
+        enabled: g("enabled").checked ? 1 : 0,
+        perks: [],
+      }),
+    });
+    
+    btn.textContent = "SAVED ✓";
+    setTimeout(() => (btn.textContent = "SAVE " + g("name").value.toUpperCase()), 1500);
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
+async function loadSettings() {
+  const s = await api("/api/admin/settings");
+  if ($("siteIP")) $("siteIP").value = s.server_ip || "";
+  if ($("siteDiscord")) $("siteDiscord").value = s.discord_url || "";
+}
+
+async function saveSite() {
+  try {
+    await api("/api/admin/settings", {
+      method: "PUT",
+      body: JSON.stringify({
+        server_ip: $("siteIP").value,
+        discord_url: $("siteDiscord").value,
+      }),
+    });
+    $("saveMsg").textContent = "Saved ✓";
+    setTimeout(() => ($("saveMsg").textContent = ""), 1500);
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
+async function loadOrders() {
+  const q = encodeURIComponent($("orderSearch")?.value || "");
+  const s = encodeURIComponent($("orderStatus")?.value || "");
+  
+  try {
+    const { orders } = await api(`/api/admin/orders?q=${q}&status=${s}`);
+    $("orders").innerHTML = orders.length
+      ? `<div class="orders">${orders
+          .map(
+            (o) => `<div class="order">
+          <b>${esc(o.id)}</b>
+          <span>${esc(o.minecraft_username)}</span>
+          <span>${esc(o.product_name)}</span>
+          <span>A$${(o.amount_cents / 100).toFixed(2)}</span>
+          <span>Payment: ${esc(o.payment_status)}</span>
+          <span>Delivery: ${esc(o.delivery_status)}</span>
+          ${
+            o.payment_status === "paid" && o.delivery_status !== "delivered"
+              ? `<button class="btn primary" onclick="deliver('${o.id}')">DELIVER</button>`
+              : ""
+          }
+        </div>`
+          )
+          .join("")}</div>`
+      : "<p class='muted'>No orders found.</p>";
+  } catch (e) {
+    if ($("orders")) $("orders").innerHTML = `<p class='error'>${e.message}</p>`;
+  }
+}
+
+async function deliver(id) {
+  try {
+    await api("/api/admin/orders/" + encodeURIComponent(id) + "/deliver", {
+      method: "POST",
+    });
+    await loadOrders();
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
+function esc(s) {
+  return String(s ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll('"', "&quot;");
+}
+
+document.addEventListener("DOMContentLoaded", boot);
