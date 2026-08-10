@@ -1,6 +1,5 @@
 import {json,adminSession,csrfOk,now} from "../../../../_lib.js";
 const dec=new TextDecoder();
-const dec=new TextDecoder();
 function i32(n){const a=new ArrayBuffer(4);new DataView(a).setInt32(0,n,true);return new Uint8Array(a)}
 function packet(id,type,body){const b=new TextEncoder().encode(body+"\0\0");const out=new Uint8Array(4+4+4+b.length);const v=new DataView(out.buffer);v.setInt32(0,4+4+b.length,true);v.setInt32(4,id,true);v.setInt32(8,type,true);out.set(b,12);return out}
 async function readN(reader,n){let out=new Uint8Array(n),o=0;while(o<n){const {value,done}=await reader.read();if(done)throw Error("RCON connection closed");const x=value.subarray(0,Math.min(value.length,n-o));out.set(x,o);o+=x.length;if(value.length>x.length){ /* uncommon; socket framing is handled below by buffered reader */ }}return out}
