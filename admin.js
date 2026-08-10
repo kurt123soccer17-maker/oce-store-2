@@ -48,14 +48,13 @@ async function boot() {
 
 async function logout() {
   try {
-    await api("/api/auth/logout", {
-      method: "POST",
-    });
+    await fetch("/api/auth/logout", { method: "POST" });
   } catch (e) {
-    console.error("Logout error:", e);
+    console.error("Logout failed:", e);
   } finally {
     csrfToken = "";
-    location.reload();
+    // Hard navigate back to login view
+    window.location.href = "/admin.html";
   }
 }
 
