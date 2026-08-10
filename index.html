@@ -95,11 +95,22 @@
     <strong id="checkoutPrice"></strong>
     <label>Minecraft Username<input id="checkoutUsername" placeholder="YourMinecraftName" autocomplete="off"></label>
     <div class="payment-label">PAYMENT METHOD</div>
-    <div class="payment-options"><div class="pay-option"><b>Secure Card Checkout</b><span>Processed by Stripe. Supported wallets may appear at checkout.</span></div></div>
+    
+    <div class="payment-options">
+      <div id="stripe-payment-option" class="pay-option" style="display: none;">
+        <b>Secure Card Checkout</b>
+        <span>Processed by Stripe. Supported wallets may appear at checkout.</span>
+      </div>
+      <div id="paypal-payment-option" class="pay-option" style="display: none;">
+        <b>PayPal Checkout</b>
+        <span>Pay securely using your PayPal account or card.</span>
+      </div>
+    </div>
+
     <button class="btn primary full" onclick="continueCheckout()">CONTINUE TO PAYMENT</button>
     <div id="checkoutError" class="error"></div>
     <div id="checkoutNotice" class="checkout-notice"></div>
-    <small>Payments are processed on Stripe's secure hosted checkout. Never enter card details directly into OCE Network.</small>
+    <small>Payments are processed securely. Never enter card details directly into OCE Network.</small>
   </div>
 </div>
 
