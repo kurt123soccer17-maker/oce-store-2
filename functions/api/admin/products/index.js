@@ -1,5 +1,4 @@
-import { json, adminSession } from "../_lib.js";
-
+import { json, adminSession } from "../../../_lib.js";
 export async function onRequestGet({ request, env }) {
   if (!(await adminSession(request, env))) {
     return json({ error: "Not authenticated" }, { status: 401 });
