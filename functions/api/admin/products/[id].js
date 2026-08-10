@@ -1,10 +1,24 @@
 import { json, adminSession, parseBody, now } from "../../../_lib.js";
 
+export async function onRequestGet({ request, env, params }) {
+  if (!(await adminSession(request, env))) {
+    return json({ error: "Not authenticated" }, { status: 401 });
+  }
+  const r = await env.DB.prepare("SELECT * FROM products WHERE id = ?").bind(params.id).first();
+  if (!r) return json({ error: "Product not found" }, { status: 404 });
+  return json({
+    product: {
+      ...r,
+      price: r.price_cents / 100,
+      perks: JSON.parse(r.perks_json || "[]"),
+    },
+  });
+}
+
 export async function onRequestPut({ request, env, params }) {
-  // Check if admin is logged in via cookie
-  const session = await adminSession(request, env);
-  if (!session) {
-    return json({ error: "Unauthorized - Please re-login" }, { status: 401 });
+  // Use session authentication directly
+  if (!(await adminSession(request, env))) {
+    return json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const p = await env.DB.prepare("SELECT * FROM products WHERE id=?").bind(params.id).first();
