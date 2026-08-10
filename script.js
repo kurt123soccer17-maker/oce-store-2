@@ -1,13 +1,161 @@
-const state={products:[],site:{ip:"ocenetwork.org",discord:"#"},selected:null};
-function money(v){return "A$"+Number(v).toFixed(0)}
-function billingText(b){return b==="monthly"?"per month":"one-time"}
-function copyIP(){navigator.clipboard?.writeText(state.site.ip);const m=document.getElementById("copyMsg");if(m){m.textContent="Copied "+state.site.ip+" ✓";setTimeout(()=>m.textContent="",2500)}}
-function productCard(p){const perks=p.perks?.map(x=>`<li>${x}</li>`).join("")||"",rank=["king","god","immortal"].includes(p.id);return `<article class="product ${rank?"rank-card":""}"><div class="icon">${p.icon||"◆"}</div>${rank?`<div class="mode-tag">UNSTABLE FFA OCE ONLY</div>`:""}<h3>${p.name}</h3><div class="price">${money(p.price)}</div><div class="billing">${billingText(p.billing)}</div><p>${p.description||""}</p>${perks?`<ul class="perks">${perks}</ul>`:""}<button class="btn primary buy" onclick="startPurchase('${p.id}')">BUY NOW</button></article>`}
-async function load(){const [p,s]=await Promise.all([fetch("/api/products").then(r=>r.json()),fetch("/api/site").then(r=>r.json())]);state.products=p.products||[];state.site=s;document.querySelectorAll(".discord").forEach(a=>{if(a.textContent.trim()==="Discord")a.href=state.site.discord_url||"#"});renderRanks();showCategory("tokens",document.querySelector(".tab"));}
-function renderRanks(){document.getElementById("rankGrid").innerHTML=state.products.filter(p=>["king","god","immortal"].includes(p.id)).map(productCard).join("")}
-function showCategory(cat,el){document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));if(el)el.classList.add("active");document.getElementById("categoryGrid").innerHTML=state.products.filter(p=>cat==="tokens"?p.id.startsWith("tokens"):cat==="keys"?p.id.startsWith("key"):p.id.startsWith("item")).map(productCard).join("")}
-function startPurchase(id){const p=state.products.find(x=>x.id===id);if(!p)return;state.selected=p;document.getElementById("checkoutProduct").textContent=p.name;document.getElementById("checkoutPrice").textContent=money(p.price);document.getElementById("checkoutUsername").value="";document.getElementById("checkoutError").textContent="";document.getElementById("checkout").classList.add("show")}
-function closeCheckout(){document.getElementById("checkout").classList.remove("show")}
-async function continueCheckout(){const u=document.getElementById("checkoutUsername").value.trim();const err=document.getElementById("checkoutError");if(!/^[A-Za-z0-9_]{3,16}$/.test(u)){err.textContent="Enter a valid Minecraft username.";return}err.textContent="Starting secure checkout…";try{const r=await fetch("/api/checkout/stripe",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({productId:state.selected.id,minecraftUsername:u})}),d=await r.json();if(!r.ok)throw Error(d.error||"Checkout unavailable");location.href=d.url}catch(e){err.textContent=e.message}}
-function choosePayment(){document.getElementById("paymentMethod").value="card"}
-document.addEventListener("DOMContentLoaded",()=>load().catch(e=>{console.error(e);document.getElementById("rankGrid").innerHTML='<p class="error">Store is temporarily unavailable.</p>'}));
+const state = { products: [], site: { ip: "ocenetwork.org", discord: "#" }, selected: null, paymentProvider: "paypal" };
+
+function money(v) { return "A$" + Number(v).toFixed(0); }
+function billingText(b) { return b === "monthly" ? "per month" : "one-time"; }
+
+function copyIP() {
+  navigator.clipboard?.writeText(state.site.ip);
+  const m = document.getElementById("copyMsg");
+  if (m) {
+    m.textContent = "Copied " + state.site.ip + " ✓";
+    setTimeout(() => (m.textContent = ""), 2500);
+  }
+}
+
+function productCard(p) {
+  const perks = p.perks?.map((x) => `<li>${x}</li>`).join("") || "";
+  const rank = ["king", "god", "immortal"].includes(p.id);
+  return `<article class="product ${rank ? "rank-card" : ""}">
+    <div class="icon">${p.icon || "◆"}</div>
+    ${rank ? `<div class="mode-tag">UNSTABLE FFA OCE ONLY</div>` : ""}
+    <h3>${p.name}</h3>
+    <div class="price">${money(p.price)}</div>
+    <div class="billing">${billingText(p.billing)}</div>
+    <p>${p.description || ""}</p>
+    ${perks ? `<ul class="perks">${perks}</ul>` : ""}
+    <button class="btn primary buy" onclick="startPurchase('${p.id}')">BUY NOW</button>
+  </article>`;
+}
+
+async function load() {
+  const [p, s] = await Promise.all([
+    fetch("/api/products").then((r) => r.json()),
+    fetch("/api/site").then((r) => r.json()),
+  ]);
+  state.products = p.products || [];
+  state.site = s;
+  document.querySelectorAll(".discord").forEach((a) => {
+    if (a.textContent.trim() === "Discord") a.href = state.site.discord_url || "#";
+  });
+  renderRanks();
+  showCategory("tokens", document.querySelector(".tab"));
+}
+
+function renderRanks() {
+  document.getElementById("rankGrid").innerHTML = state.products
+    .filter((p) => ["king", "god", "immortal"].includes(p.id))
+    .map(productCard)
+    .join("");
+}
+
+function showCategory(cat, el) {
+  document.querySelectorAll(".tab").forEach((x) => x.classList.remove("active"));
+  if (el) el.classList.add("active");
+  document.getElementById("categoryGrid").innerHTML = state.products
+    .filter((p) => (cat === "tokens" ? p.id.startsWith("tokens") : cat === "keys" ? p.id.startsWith("key") : p.id.startsWith("item")))
+    .map(productCard)
+    .join("");
+}
+
+// Check which payment methods are configured and hide/show options accordingly
+async function updatePaymentMethodsVisibility() {
+  const stripeBtn = document.getElementById("stripe-payment-option");
+  const paypalBtn = document.getElementById("paypal-payment-option");
+  const checkoutNotice = document.getElementById("checkoutNotice");
+
+  try {
+    const res = await fetch("/api/payment-methods");
+    const data = await res.json();
+
+    if (stripeBtn) {
+      stripeBtn.style.display = data.stripe ? "block" : "none";
+      if (data.stripe) stripeBtn.onclick = () => selectProvider("stripe");
+    }
+
+    if (paypalBtn) {
+      paypalBtn.style.display = data.paypal ? "block" : "none";
+      if (data.paypal) paypalBtn.onclick = () => selectProvider("paypal");
+    }
+
+    // Auto-select whichever provider is enabled
+    if (data.stripe) {
+      selectProvider("stripe");
+    } else if (data.paypal) {
+      selectProvider("paypal");
+    }
+
+    if (checkoutNotice) {
+      checkoutNotice.textContent = (!data.stripe && !data.paypal) ? "No payment options are configured." : "";
+    }
+  } catch (err) {
+    console.error("Failed to load payment methods", err);
+  }
+}
+
+function selectProvider(provider) {
+  state.paymentProvider = provider;
+  const stripeBtn = document.getElementById("stripe-payment-option");
+  const paypalBtn = document.getElementById("paypal-payment-option");
+
+  if (stripeBtn) stripeBtn.classList.toggle("selected", provider === "stripe");
+  if (paypalBtn) paypalBtn.classList.toggle("selected", provider === "paypal");
+}
+
+function startPurchase(id) {
+  const p = state.products.find((x) => x.id === id);
+  if (!p) return;
+  state.selected = p;
+  document.getElementById("checkoutProduct").textContent = p.name;
+  document.getElementById("checkoutPrice").textContent = money(p.price);
+  document.getElementById("checkoutUsername").value = "";
+  document.getElementById("checkoutError").textContent = "";
+  document.getElementById("checkout").classList.add("show");
+  
+  // Refresh enabled payment methods whenever modal opens
+  updatePaymentMethodsVisibility();
+}
+
+function closeCheckout() {
+  document.getElementById("checkout").classList.remove("show");
+}
+
+async function continueCheckout() {
+  const u = document.getElementById("checkoutUsername").value.trim();
+  const err = document.getElementById("checkoutError");
+  
+  if (!/^[A-Za-z0-9_]{3,16}$/.test(u)) {
+    err.textContent = "Enter a valid Minecraft username.";
+    return;
+  }
+  
+  err.textContent = "Starting secure checkout…";
+  
+  try {
+    const r = await fetch("/api/checkout", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        productId: state.selected.id,
+        minecraftUsername: u,
+        paymentProvider: state.paymentProvider,
+      }),
+    });
+    
+    const d = await r.json();
+    if (!r.ok) throw Error(d.error || "Checkout unavailable");
+    location.href = d.url;
+  } catch (e) {
+    err.textContent = e.message;
+  }
+}
+
+function choosePayment() {
+  document.getElementById("paymentMethod").value = "card";
+}
+
+document.addEventListener("DOMContentLoaded", () =>
+  load().catch((e) => {
+    console.error(e);
+    document.getElementById("rankGrid").innerHTML = '<p class="error">Store is temporarily unavailable.</p>';
+  })
+);
