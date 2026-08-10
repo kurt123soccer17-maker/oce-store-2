@@ -1,0 +1,1 @@
+import {json,adminSession,csrfOk,clearCookie} from "../../_lib.js"; export async function onRequestPost({request,env}){const s=await adminSession(request,env);if(!s||!csrfOk(request,s))return json({error:"Unauthorized"},{status:401});return json({ok:true},{headers:{"set-cookie":clearCookie("oce_admin")}});}

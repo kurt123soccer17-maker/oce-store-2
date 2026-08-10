@@ -1,0 +1,8 @@
+name = "oce-network-store"
+compatibility_date = "2026-08-10"
+pages_build_output_dir = "."
+
+[[d1_databases]]
+binding = "DB"
+database_name = "oce-store"
+database_id = "3b63b00b-c11b-41d3-b31f-fc967bd607dc"

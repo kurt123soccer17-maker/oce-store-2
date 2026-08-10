@@ -1,0 +1,2 @@
+import {json} from "../_lib.js";
+export async function onRequestGet({env}){ const rows=await env.DB.prepare("SELECT id,name,price_cents,billing,icon,description,perks_json FROM products WHERE enabled=1 ORDER BY rowid").all(); return json({products:(rows.results||[]).map(p=>({id:p.id,name:p.name,price:p.price_cents/100,billing:p.billing,icon:p.icon,description:p.description,perks:JSON.parse(p.perks_json||"[]")}))}); }

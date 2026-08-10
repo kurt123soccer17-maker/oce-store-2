@@ -1,0 +1,2 @@
+import {json} from "../../_lib.js";
+export async function onRequestGet({env,params}){ const o=await env.DB.prepare("SELECT o.*,p.name product_name FROM orders o LEFT JOIN products p ON p.id=o.product_id WHERE o.id=?").bind(params.id).first(); if(!o)return json({error:"Order not found"},{status:404}); return json({id:o.id,minecraft_username:o.minecraft_username,amount:o.amount_cents/100,currency:o.currency,payment_status:o.payment_status,delivery_status:o.delivery_status,created_at:o.created_at,delivered_at:o.delivered_at,product_name:o.product_name}); }

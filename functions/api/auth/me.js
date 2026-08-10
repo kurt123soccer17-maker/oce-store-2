@@ -1,0 +1,1 @@
+import {json,adminSession} from "../../_lib.js"; export async function onRequestGet({request,env}){const s=await adminSession(request,env);return s?json({ok:true,csrf:s.csrf}):json({error:"Not authenticated"},{status:401});}

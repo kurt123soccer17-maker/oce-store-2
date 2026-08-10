@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OCE Network | Store</title>
+  <link rel="stylesheet" href="style.css?v=20260809">
+</head>
+<body>
+<header class="nav">
+  <a class="brand" href="index.html"><img src="oce-logo.png" alt="OCE Network logo"><span>OCE</span> NETWORK</a>
+  <nav>
+    <a href="#home">Home</a>
+    <a href="#gamemodes">Game Modes</a>
+    <a href="#store">Store</a>
+    <a href="#unstable">Unstable FFA OCE</a>
+  </nav>
+  <a class="discord" href="#" title="Add your Discord invite in script.js">Discord</a>
+</header>
+
+<main>
+<section id="home" class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-content">
+    <div class="eyebrow">OCE NETWORK • oce-network.org</div>
+    <h1>PLAY. COMPETE.<br><span>CONQUER.</span></h1>
+    <p>One network. Multiple experiences. Join OCE Network and discover Unstable FFA OCE, with SMP and Prison coming soon.</p>
+    <div class="actions">
+      <a class="btn primary" href="#store">VIEW STORE</a>
+      <button class="btn ghost" onclick="copyIP()">COPY SERVER IP</button>
+    </div>
+    <div id="copyMsg" class="copy-msg"></div>
+  </div>
+</section>
+
+<section id="gamemodes" class="section">
+  <div class="section-title">
+    <span>01</span><h2>GAME MODES</h2>
+  </div>
+  <div class="modes">
+    <article class="mode live">
+      <div class="mode-tag">LIVE</div>
+      <h3>UNSTABLE FFA OCE</h3>
+      <p>Fast-paced FFA combat with an OCE twist.</p>
+      <a href="#unstable">ENTER STORE →</a>
+    </article>
+    <article class="mode">
+      <div class="mode-tag">DEVELOPMENT</div>
+      <h3>SMP</h3>
+      <p>A new OCE survival experience is currently being developed.</p>
+    </article>
+    <article class="mode">
+      <div class="mode-tag">DEVELOPMENT</div>
+      <h3>PRISON</h3>
+      <p>Progress, rank up and dominate the mines. Coming soon.</p>
+    </article>
+  </div>
+</section>
+
+<section id="store" class="section store-section">
+  <div class="section-title">
+    <span>02</span><h2>UNSTABLE FFA OCE RANKS</h2>
+  </div>
+  <p class="muted">🟧 RANKS FOR <strong>UNSTABLE FFA OCE ONLY</strong> • OCE Orange Edition</p>
+  <div id="rankGrid" class="product-grid"></div>
+</section>
+
+<section id="unstable" class="section">
+  <div class="section-title">
+    <span>03</span><h2>UNSTABLE FFA OCE</h2>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="showCategory('tokens', this)">TOKENS</button>
+    <button class="tab" onclick="showCategory('keys', this)">CRATE KEYS</button>
+    <button class="tab" onclick="showCategory('items', this)">SPECIAL ITEMS</button>
+  </div>
+  <div id="categoryGrid" class="product-grid"></div>
+</section>
+
+<section class="join">
+  <div>
+    <span class="eyebrow">READY?</span>
+    <h2>JOIN OCE NETWORK</h2>
+    <p>Server IP: <strong>ocenetwork.org</strong></p>
+  </div>
+  <button class="btn primary" onclick="copyIP()">COPY IP</button>
+</section>
+</main>
+<div id="checkout" class="checkout-overlay">
+  <div class="checkout-box">
+    <button class="close" onclick="closeCheckout()">×</button>
+    <div class="eyebrow">SECURE CHECKOUT</div>
+    <h2>COMPLETE YOUR ORDER</h2>
+    <p id="checkoutProduct" class="checkout-product"></p>
+    <strong id="checkoutPrice"></strong>
+    <label>Minecraft Username<input id="checkoutUsername" placeholder="YourMinecraftName" autocomplete="off"></label>
+    <div class="payment-label">PAYMENT METHOD</div>
+    <div class="payment-options"><div class="pay-option"><b>Secure Card Checkout</b><span>Processed by Stripe. Supported wallets may appear at checkout.</span></div></div>
+    <button class="btn primary full" onclick="continueCheckout()">CONTINUE TO PAYMENT</button>
+    <div id="checkoutError" class="error"></div>
+    <div id="checkoutNotice" class="checkout-notice"></div>
+    <small>Payments are processed on Stripe's secure hosted checkout. Never enter card details directly into OCE Network.</small>
+  </div>
+</div>
+
+<footer>
+  <div><strong>OCE NETWORK</strong><br><span>Not affiliated with Mojang Studios or Microsoft.</span></div>
+  <div><a href="admin.html">Admin</a></div>
+</footer>
+
+<script src="script.js?v=20260810"></script>
+</body>
+</html>
